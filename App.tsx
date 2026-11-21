@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View, Text, StyleSheet, ScrollView, ImageBackground, Pressable,
-  Dimensions, StatusBar, Platform
+  Dimensions, StatusBar, Platform, TextInput
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -44,6 +44,10 @@ export default function App() {
   const [iconScale, setIconScale] = useState(22);
   const [showNavLabels, setShowNavLabels] = useState(true);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [displayName, setDisplayName] = useState("Мой профиль");
+  const [username, setUsername] = useState("@myprofile");
+  const [bio, setBio] = useState("Расскажи немного о себе ✨");
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -68,6 +72,32 @@ export default function App() {
     })();
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem("tiktok-mod:profile:v1");
+        if (saved && active) {
+          const value = JSON.parse(saved);
+          if (typeof value.displayName === "string") setDisplayName(value.displayName);
+          if (typeof value.username === "string") setUsername(value.username);
+          if (typeof value.bio === "string") setBio(value.bio);
+        }
+      } catch (error) {
+        console.warn("Не удалось загрузить профиль", error);
+      } finally {
+        if (active) setProfileLoaded(true);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!profileLoaded) return;
+    AsyncStorage.setItem("tiktok-mod:profile:v1", JSON.stringify({ displayName, username, bio }))
+      .catch(error => console.warn("Не удалось сохранить профиль", error));
+  }, [profileLoaded, displayName, username, bio]);
 
   useEffect(() => {
     if (!settingsLoaded) return;
@@ -177,7 +207,15 @@ export default function App() {
         <SafeAreaView style={styles.settingsPage} edges={["top"]}>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 125 }}>
             <Text style={styles.eyebrow}>TIKTOK MOD · PERSONALIZATION</Text>
-            <Text style={[styles.pageTitle, { fontFamily: font }]}>Внешний вид</Text>
+            <Text style={[styles.pageTitle, { fontFamily: font }]}>Профиль</Text>
+            <View style={styles.profileEditor}>
+              <View style={styles.profileAvatar}><Ionicons name="person" size={28} color="#fff" /></View>
+              <Text style={styles.profileHint}>ТВОЯ СТРАНИЦА</Text>
+              <TextInput value={displayName} onChangeText={setDisplayName} placeholder="Имя профиля" placeholderTextColor="rgba(255,255,255,0.35)" style={[styles.profileInput, { fontFamily: font }]} maxLength={32} />
+              <TextInput value={username} onChangeText={setUsername} placeholder="@username" placeholderTextColor="rgba(255,255,255,0.35)" style={[styles.profileInput, styles.profileHandleInput, { fontFamily: font }]} maxLength={24} autoCapitalize="none" />
+              <TextInput value={bio} onChangeText={setBio} placeholder="Описание профиля" placeholderTextColor="rgba(255,255,255,0.35)" style={[styles.profileInput, styles.profileBioInput, { fontFamily: font }]} maxLength={100} multiline />
+              <Text style={styles.saveHint}>{profileLoaded ? "Профиль сохраняется автоматически на этом устройстве" : "Загружаем профиль…"}</Text>
+            </View>
             <Text style={[styles.sectionTitle, { fontFamily: font }]}>Шрифт приложения</Text>
             <BlurView intensity={35} tint="dark" style={styles.settingsCard}>
               {renderGlassButton("Системный", fontChoice === "system", () => setFontChoice("system"))}
@@ -349,6 +387,12 @@ const styles = StyleSheet.create({
   createButton: { width: 37, height: 29, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.94)", alignItems: "center", justifyContent: "center" },
   placeholder: { flex: 1, paddingHorizontal: 22, paddingTop: 28 },
   settingsPage: { flex: 1, paddingHorizontal: 20, paddingTop: 18 },
+  profileEditor: { borderRadius: 23, padding: 16, marginBottom: 18, alignItems: "center", backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.16)" },
+  profileAvatar: { width: 76, height: 76, borderRadius: 38, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.16)", borderWidth: 1, borderColor: "rgba(255,255,255,0.28)", marginBottom: 10 },
+  profileHint: { color: "rgba(255,255,255,0.45)", fontSize: 9, letterSpacing: 2, fontWeight: "800", marginBottom: 8 },
+  profileInput: { width: "100%", color: "#fff", fontSize: 16, fontWeight: "700", textAlign: "center", minHeight: 42, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.14)", paddingHorizontal: 8 },
+  profileHandleInput: { color: "rgba(255,255,255,0.62)", fontSize: 13, fontWeight: "600" },
+  profileBioInput: { minHeight: 64, fontSize: 13, fontWeight: "400", textAlignVertical: "top", paddingTop: 12 },
   eyebrow: { color: "rgba(255,255,255,0.58)", letterSpacing: 2.4, fontSize: 10, fontWeight: "800", marginBottom: 9 },
   pageTitle: { color: "#fff", fontSize: 34, fontWeight: "900", marginBottom: 25 },
   sectionTitle: { color: "#fff", fontSize: 17, fontWeight: "800", marginBottom: 11, marginTop: 10 },
