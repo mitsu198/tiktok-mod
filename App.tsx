@@ -37,6 +37,11 @@ export default function App() {
   const [following, setFollowing] = useState<string[]>([]);
   const [fontChoice, setFontChoice] = useState<FontChoice>("system");
   const [navStyle, setNavStyle] = useState<NavStyle>("glass");
+  const [glassOpacity, setGlassOpacity] = useState(0.16);
+  const [blurLevel, setBlurLevel] = useState(55);
+  const [navRadius, setNavRadius] = useState(28);
+  const [iconScale, setIconScale] = useState(22);
+  const [showNavLabels, setShowNavLabels] = useState(true);
 
   const font = fontFamilies[fontChoice];
   const toggleLike = (id: string) => setLiked(old => old.includes(id) ? old.filter(x => x !== id) : [...old, id]);
@@ -151,6 +156,64 @@ export default function App() {
                 </Pressable>
               ))}
             </View>
+            <Text style={[styles.sectionTitle, { fontFamily: font }]}>Тонкая настройка Liquid Glass</Text>
+            <View style={styles.editorCard}>
+              <View style={styles.editorHeading}>
+                <Text style={[styles.editorTitle, { fontFamily: font }]}>Прозрачность</Text>
+                <Text style={styles.editorValue}>{Math.round(glassOpacity * 100)}%</Text>
+              </View>
+              <View style={styles.chipRow}>
+                {[0.08, 0.16, 0.24, 0.32].map(value => (
+                  <Pressable key={value} onPress={() => setGlassOpacity(value)} style={[styles.editorChip, glassOpacity === value && styles.editorChipActive]}>
+                    <Text style={[styles.editorChipText, glassOpacity === value && styles.editorChipTextActive]}>{Math.round(value * 100)}%</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <View style={styles.editorHeading}>
+                <Text style={[styles.editorTitle, { fontFamily: font }]}>Размытие</Text>
+                <Text style={styles.editorValue}>{blurLevel}</Text>
+              </View>
+              <View style={styles.chipRow}>
+                {[20, 40, 55, 75].map(value => (
+                  <Pressable key={value} onPress={() => setBlurLevel(value)} style={[styles.editorChip, blurLevel === value && styles.editorChipActive]}>
+                    <Text style={[styles.editorChipText, blurLevel === value && styles.editorChipTextActive]}>{value}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text style={[styles.editorTitle, { fontFamily: font, marginTop: 17 }]}>Форма панели</Text>
+              <View style={styles.chipRow}>
+                {[16, 24, 28, 36].map(value => (
+                  <Pressable key={value} onPress={() => setNavRadius(value)} style={[styles.editorChip, navRadius === value && styles.editorChipActive]}>
+                    <Text style={[styles.editorChipText, navRadius === value && styles.editorChipTextActive]}>{value}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text style={[styles.editorTitle, { fontFamily: font, marginTop: 17 }]}>Размер иконок</Text>
+              <View style={styles.chipRow}>
+                {[18, 22, 26, 30].map(value => (
+                  <Pressable key={value} onPress={() => setIconScale(value)} style={[styles.editorChip, iconScale === value && styles.editorChipActive]}>
+                    <Text style={[styles.editorChipText, iconScale === value && styles.editorChipTextActive]}>{value}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Pressable style={styles.toggleRow} onPress={() => setShowNavLabels(value => !value)}>
+                <View>
+                  <Text style={[styles.editorTitle, { fontFamily: font }]}>Подписи разделов</Text>
+                  <Text style={styles.editorSub}>Показывать названия под иконками</Text>
+                </View>
+                <View style={[styles.toggleTrack, showNavLabels && styles.toggleTrackOn]}>
+                  <View style={[styles.toggleThumb, showNavLabels && styles.toggleThumbOn]} />
+                </View>
+              </Pressable>
+              <View style={[styles.livePreview, { borderRadius: navRadius, backgroundColor: `rgba(255,255,255,${glassOpacity})` }]}>
+                <Ionicons name="home-outline" size={iconScale} color="#fff" />
+                <Ionicons name="people-outline" size={iconScale} color="rgba(255,255,255,0.7)" />
+                <View style={styles.previewAdd}><Ionicons name="add" size={iconScale + 2} color="#111" /></View>
+                <Ionicons name="chatbubble-ellipses-outline" size={iconScale} color="rgba(255,255,255,0.7)" />
+                <Ionicons name="person-outline" size={iconScale} color="rgba(255,255,255,0.7)" />
+              </View>
+              <Text style={styles.previewCaption}>Предпросмотр панели</Text>
+            </View>
             <BlurView intensity={28} tint="dark" style={styles.noteCard}>
               <Ionicons name="sparkles-outline" size={20} color="#fff" />
               <Text style={[styles.noteText, { fontFamily: font }]}>Настройки применяются сразу. В следующих версиях добавим больше шрифтов, прозрачности и вариантов оформления.</Text>
@@ -172,12 +235,13 @@ export default function App() {
       )}
 
       <BlurView
-        intensity={navStyle === "minimal" ? 18 : 55}
+        intensity={navStyle === "minimal" ? 18 : blurLevel}
         tint="dark"
         style={[
           styles.bottomNav,
           navStyle === "floating" && styles.bottomNavFloating,
           navStyle === "minimal" && styles.bottomNavMinimal,
+          { backgroundColor: `rgba(245,247,250,${glassOpacity})`, borderRadius: navStyle === "minimal" ? 0 : navRadius },
         ]}
       >
         {navItems.map(([key, icon, label]) => (
@@ -186,10 +250,10 @@ export default function App() {
               <View style={styles.createButton}><Ionicons name="add" size={27} color="#111" /></View>
             ) : (
               <View style={[styles.navIcon, tab === key && styles.navIconActive]}>
-                <Ionicons name={icon} size={22} color={tab === key ? "#fff" : "#aaa"} />
+                <Ionicons name={icon} size={iconScale} color={tab === key ? "#fff" : "#aaa"} />
               </View>
             )}
-            <Text style={[styles.navLabel, { fontFamily: font }, tab === key && styles.navLabelActive]}>{label}</Text>
+            {showNavLabels && <Text style={[styles.navLabel, { fontFamily: font }, tab === key && styles.navLabelActive]}>{label}</Text>}
           </Pressable>
         ))}
       </BlurView>
@@ -256,6 +320,24 @@ const styles = StyleSheet.create({
   previewDotActive: { backgroundColor: "#fff", width: 12, height: 12, borderRadius: 6 },
   navStyleTitle: { color: "#fff", fontSize: 15, fontWeight: "800", marginBottom: 3 },
   navStyleDetail: { color: "rgba(255,255,255,0.58)", fontSize: 12 },
+  editorCard: { borderRadius: 22, padding: 16, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)", marginTop: 2 },
+  editorHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 5, marginBottom: 10 },
+  editorTitle: { color: "#fff", fontSize: 14, fontWeight: "800" },
+  editorValue: { color: "rgba(255,255,255,0.7)", fontSize: 12, fontWeight: "700" },
+  chipRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  editorChip: { minWidth: 52, paddingHorizontal: 13, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
+  editorChipActive: { backgroundColor: "rgba(255,255,255,0.23)", borderColor: "rgba(255,255,255,0.58)" },
+  editorChipText: { color: "rgba(255,255,255,0.68)", fontSize: 12, fontWeight: "700" },
+  editorChipTextActive: { color: "#fff" },
+  toggleRow: { marginTop: 18, paddingTop: 15, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.12)", flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  editorSub: { color: "rgba(255,255,255,0.5)", fontSize: 11, marginTop: 4 },
+  toggleTrack: { width: 45, height: 26, borderRadius: 15, padding: 3, backgroundColor: "rgba(255,255,255,0.16)", justifyContent: "center" },
+  toggleTrackOn: { backgroundColor: "rgba(255,255,255,0.42)" },
+  toggleThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: "#aaa" },
+  toggleThumbOn: { alignSelf: "flex-end", backgroundColor: "#fff" },
+  livePreview: { marginTop: 20, minHeight: 60, paddingHorizontal: 15, flexDirection: "row", alignItems: "center", justifyContent: "space-around", borderWidth: 1, borderColor: "rgba(255,255,255,0.28)", overflow: "hidden" },
+  previewAdd: { width: 34, height: 29, borderRadius: 10, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" },
+  previewCaption: { color: "rgba(255,255,255,0.42)", textAlign: "center", fontSize: 10, marginTop: 8 },
   noteCard: { marginTop: 18, padding: 16, borderRadius: 18, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)", backgroundColor: "rgba(255,255,255,0.06)", flexDirection: "row", gap: 11, alignItems: "center" },
   noteText: { color: "rgba(255,255,255,0.72)", fontSize: 12, lineHeight: 18, flex: 1 },
   glassCard: { borderRadius: 25, padding: 24, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.18)", gap: 12, backgroundColor: "rgba(255,255,255,0.07)" },
