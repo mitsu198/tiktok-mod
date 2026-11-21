@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View, Text, StyleSheet, ScrollView, ImageBackground, Pressable,
   Dimensions, StatusBar, Platform
@@ -42,6 +43,48 @@ export default function App() {
   const [navRadius, setNavRadius] = useState(28);
   const [iconScale, setIconScale] = useState(22);
   const [showNavLabels, setShowNavLabels] = useState(true);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem("tiktok-mod:appearance:v1");
+        if (saved && active) {
+          const value = JSON.parse(saved);
+          if (["system", "rounded", "serif"].includes(value.fontChoice)) setFontChoice(value.fontChoice);
+          if (["glass", "floating", "minimal"].includes(value.navStyle)) setNavStyle(value.navStyle);
+          if ([0.08, 0.16, 0.24, 0.32].includes(value.glassOpacity)) setGlassOpacity(value.glassOpacity);
+          if ([20, 40, 55, 75].includes(value.blurLevel)) setBlurLevel(value.blurLevel);
+          if ([16, 24, 28, 36].includes(value.navRadius)) setNavRadius(value.navRadius);
+          if ([18, 22, 26, 30].includes(value.iconScale)) setIconScale(value.iconScale);
+          if (typeof value.showNavLabels === "boolean") setShowNavLabels(value.showNavLabels);
+        }
+      } catch (error) {
+        console.warn("Не удалось загрузить настройки внешнего вида", error);
+      } finally {
+        if (active) setSettingsLoaded(true);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!settingsLoaded) return;
+    const settings = { fontChoice, navStyle, glassOpacity, blurLevel, navRadius, iconScale, showNavLabels };
+    AsyncStorage.setItem("tiktok-mod:appearance:v1", JSON.stringify(settings))
+      .catch(error => console.warn("Не удалось сохранить настройки внешнего вида", error));
+  }, [settingsLoaded, fontChoice, navStyle, glassOpacity, blurLevel, navRadius, iconScale, showNavLabels]);
+
+  const resetAppearance = () => {
+    setFontChoice("system");
+    setNavStyle("glass");
+    setGlassOpacity(0.16);
+    setBlurLevel(55);
+    setNavRadius(28);
+    setIconScale(22);
+    setShowNavLabels(true);
+  };
 
   const font = fontFamilies[fontChoice];
   const toggleLike = (id: string) => setLiked(old => old.includes(id) ? old.filter(x => x !== id) : [...old, id]);
@@ -157,6 +200,7 @@ export default function App() {
               ))}
             </View>
             <Text style={[styles.sectionTitle, { fontFamily: font }]}>Тонкая настройка Liquid Glass</Text>
+            <Text style={styles.saveHint}>{settingsLoaded ? "Изменения сохраняются автоматически на этом устройстве" : "Загружаем твои настройки…"}</Text>
             <View style={styles.editorCard}>
               <View style={styles.editorHeading}>
                 <Text style={[styles.editorTitle, { fontFamily: font }]}>Прозрачность</Text>
@@ -214,6 +258,10 @@ export default function App() {
               </View>
               <Text style={styles.previewCaption}>Предпросмотр панели</Text>
             </View>
+            <Pressable onPress={resetAppearance} style={styles.resetButton}>
+              <Ionicons name="refresh-outline" size={17} color="#fff" />
+              <Text style={[styles.resetButtonText, { fontFamily: font }]}>Сбросить оформление</Text>
+            </Pressable>
             <BlurView intensity={28} tint="dark" style={styles.noteCard}>
               <Ionicons name="sparkles-outline" size={20} color="#fff" />
               <Text style={[styles.noteText, { fontFamily: font }]}>Настройки применяются сразу. В следующих версиях добавим больше шрифтов, прозрачности и вариантов оформления.</Text>
@@ -320,6 +368,9 @@ const styles = StyleSheet.create({
   previewDotActive: { backgroundColor: "#fff", width: 12, height: 12, borderRadius: 6 },
   navStyleTitle: { color: "#fff", fontSize: 15, fontWeight: "800", marginBottom: 3 },
   navStyleDetail: { color: "rgba(255,255,255,0.58)", fontSize: 12 },
+  saveHint: { color: "rgba(255,255,255,0.48)", fontSize: 11, marginTop: -5, marginBottom: 12 },
+  resetButton: { marginTop: 16, minHeight: 48, borderRadius: 15, borderWidth: 1, borderColor: "rgba(255,255,255,0.18)", backgroundColor: "rgba(255,255,255,0.07)", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  resetButtonText: { color: "#fff", fontSize: 13, fontWeight: "700" },
   editorCard: { borderRadius: 22, padding: 16, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)", marginTop: 2 },
   editorHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 5, marginBottom: 10 },
   editorTitle: { color: "#fff", fontSize: 14, fontWeight: "800" },
