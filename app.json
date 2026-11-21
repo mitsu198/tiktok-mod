@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "TikTok MOD",
+    "slug": "tiktok-mod",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mitsu198.tiktokmod"
+    },
+    "android": {
+      "package": "com.mitsu198.tiktokmod",
+      "adaptiveIcon": {
+        "backgroundColor": "#090914"
+      }
+    },
+    "plugins": [
+      "expo-blur"
+    ],
+    "splash": {
+      "backgroundColor": "#090914",
+      "resizeMode": "contain"
+    }
+  }
+}
